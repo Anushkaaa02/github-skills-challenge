@@ -1,28 +1,35 @@
 import json
+from pathlib import Path
 
-from anomaly_detector import AnomalyDetector
-from event_consumer import EventConsumer
-from event_producer import EventProducer
-from event_topic import EventTopic
+try:
+    from .anomaly_detector import AnomalyDetector
+    from .event_consumer import EventConsumer
+    from .event_producer import EventProducer
+    from .event_topic import EventTopic
+except ImportError:  # pragma: no cover - support direct script execution
+    from anomaly_detector import AnomalyDetector
+    from event_consumer import EventConsumer
+    from event_producer import EventProducer
+    from event_topic import EventTopic
 
 
 def load_data(file_path):
-    with open(file_path, "r", encoding="utf-8") as file:
+    path = Path(file_path)
+    if not path.is_absolute():
+        repo_root = Path(__file__).resolve().parent.parent
+        path = repo_root / path
+    with path.open("r", encoding="utf-8") as file:
         return json.load(file)
 
 
 def run_pipeline(file_path):
     data = load_data(file_path)
 
-    # INTENTIONAL ASSESSMENT ISSUE #2
-    producer_topic = EventTopic("service-events")
+    topic = EventTopic("anomaly-events")
 
     detector = AnomalyDetector()
-    producer = EventProducer(producer_topic)
-
-    # INTENTIONAL ASSESSMENT ISSUE #3
-    consumer_topic = EventTopic("anomaly-events")
-    consumer = EventConsumer(consumer_topic)
+    producer = EventProducer(topic)
+    consumer = EventConsumer(topic)
 
     detected_events = []
 
